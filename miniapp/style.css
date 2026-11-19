@@ -29,3 +29,41 @@
 .optional-details .form-grid { margin-top: 14px; }
 #idea-field[hidden] { display: none; }
 #custom-story { margin-bottom: 18px; }
+
+#help { font-size: 12px; font-weight: 750; }
+.faq-hero {
+  padding: clamp(22px, 5vw, 34px);
+  border-radius: 24px;
+  background: radial-gradient(circle at 100% 0%, #ffffff20, transparent 48%), #075c53;
+  color: white;
+}
+.faq-hero h1 { margin: 0 0 8px; font: 500 clamp(28px, 7vw, 44px)/1.08 Georgia, serif; }
+.faq-hero p { margin: 0; max-width: 35ch; font-size: 15px; line-height: 1.5; color: #e2f2e8; }
+.faq-topics { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+.faq-topic {
+  min-height: 44px; padding: 6px 12px; border: 1px solid var(--line);
+  border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 650;
+}
+.faq-topic[aria-pressed="true"] { background: var(--sun); border-color: transparent; color: #253a28; }
+.faq-panel { border: 1px solid var(--line); border-radius: 20px; background: var(--surface); }
+.faq-panel details { margin: 0; border: 0; padding: 0 16px; }
+.faq-panel details + details { border-top: 1px solid var(--line); }
+.faq-panel summary {
+  min-height: 52px; padding: 12px 0; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; list-style: none; font-size: 16px;
+}
+.faq-panel summary::-webkit-details-marker { display: none; }
+.faq-plus { position: relative; flex: 0 0 22px; height: 22px; border-radius: 50%; background: var(--soft); color: var(--ink); }
+.faq-plus::before, .faq-plus::after {
+  content: ""; position: absolute; width: 10px; height: 2px; border-radius: 2px;
+  left: 6px; top: 10px; background: currentColor;
+}
+.faq-plus::after { transform: rotate(90deg); }
+.faq-panel details[open] .faq-plus::after { transform: rotate(0); }
+.faq-panel details p { margin: 0 0 16px; padding: 0; font-size: 15px; line-height: 1.55; color: var(--muted); }
+.faq-contact {
+  margin-top: 16px; display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap; background: var(--soft); border-radius: 18px; padding: 16px;
+}
+.faq-contact h2 { font-size: 23px; }
+.faq-contact p { margin: 4px 0 0; max-width: 32ch; font-size: 14px; line-height: 1.45; }

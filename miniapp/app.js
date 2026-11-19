@@ -1,10 +1,11 @@
-import { stories, validateBrief, formatBrief } from './domain.js';
+import { stories, validateBrief, formatBrief, faq } from './domain.js?v=faq-20261119';
 const app = document.querySelector('#app');
 const tg = window.Telegram?.WebApp;
 let filter = 'all', selected = 'custom', draft = {}, reviewing = false;
 let currentPage = 'home';
 const initialPage = new URLSearchParams(location.search).get('view') === 'brief' ? 'brief' : 'home';
 const returnPages = {brief: 'home', corporate: 'home', about: 'home'};
+let faqTopic = faq[0].id;
 const e = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const manager='https://t.me/manageryas';
 function toast(text){const el=document.querySelector('#toast');el.textContent=text;el.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.style.display='none',4000);}
@@ -114,6 +115,9 @@ function brief() {
       </div>
       <form class="form-card" id="brief-form">
         <div class="form-grid">
+          <label class="field wide">Как к вам обращаться?
+            <input name="clientName" autocomplete="name" maxlength="60" value="${value('clientName')}" placeholder="Например, Анна">
+          </label>
           <label class="field wide">Сюжет
             <select name="story">${options.map(item => `<option value="${item.id}" ${kind === item.id ? 'selected' : ''}>${item.title}</option>`).join('')}</select>
           </label>
@@ -206,7 +210,43 @@ function review() {
   };
 }
 
-function about(){app.innerHTML=`<div class="narrow"><div class="page-intro"><div class="eyebrow section-label">Рядом на каждом шаге</div><h1>Как всё устроено</h1><p class="muted">Мы начинаем с разговора, согласуем детали и проверяем каждый фильм перед выдачей.</p></div><section class="form-card">${[['Что входит в персонализацию?','Имя и его произношение, согласованный образ ребёнка и финальное поздравление. Основная история сохраняется.'],['Каким будет мультфильм?','Первый семейный формат — один ребёнок и готовая сюжетная основа на 40–60 секунд. Демо «Звезды» длится 41 секунду, «Фонарика» — 40,5 секунды.'],['Насколько герой будет похож?','До анимации согласуем образ. Мы не обещаем точную копию внешности.'],['Сколько стоит и когда будет готово?','Цена, срок, состав работ и условия изменений согласуются с менеджером до производства.'],['Где мои фотографии?','В этой версии приложения фотографии не запрашиваются и не загружаются. Черновик брифа хранится только в памяти открытой страницы и исчезнет при её перезагрузке.'],['Где мой заказ?','После отправки заявки менеджер уточнит детали и подтвердит условия в Telegram.']].map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join('')}<div class="actions"><button class="btn" id="chat">Открыть чат менеджера</button></div><p class="hint">Чат — начало обсуждения. Подготовленная в приложении заявка не считается отправленной автоматически.</p></section></div>`;app.querySelector('#chat').onclick=openManager;}
+function about() {
+  app.innerHTML = `
+    <div class="narrow faq-page">
+      <div class="faq-hero">
+        <h1>Частые вопросы</h1>
+        <p>Как придумать свою историю, отправить заявку и получить фильм.</p>
+      </div>
+      <div class="faq-topics" role="group" aria-label="Темы вопросов">
+        ${faq.map(topic => `<button type="button" class="faq-topic" data-faq="${topic.id}"
+          aria-controls="faq-${topic.id}" aria-pressed="${topic.id === faqTopic}">${topic.title}</button>`).join('')}
+      </div>
+      ${faq.map(topic => `
+        <section class="faq-panel" id="faq-${topic.id}" aria-label="${topic.title}" ${topic.id === faqTopic ? '' : 'hidden'}>
+          ${topic.questions.map(([question, answer]) => `
+            <details>
+              <summary><span>${e(question)}</span><span class="faq-plus" aria-hidden="true"></span></summary>
+              <p>${e(answer)}</p>
+            </details>`).join('')}
+        </section>`).join('')}
+      <aside class="faq-contact">
+        <div><h2>Остался вопрос?</h2><p>Менеджер поможет подобрать формат и ответит по вашей истории.</p></div>
+        <button class="btn" type="button" id="chat">Написать менеджеру</button>
+      </aside>
+    </div>`;
+  app.querySelectorAll('[data-faq]').forEach(button => {
+    button.onclick = () => {
+      faqTopic = button.dataset.faq;
+      app.querySelectorAll('[data-faq]').forEach(item => {
+        const active = item.dataset.faq === faqTopic;
+        item.setAttribute('aria-pressed', String(active));
+        document.getElementById(item.getAttribute('aria-controls')).hidden = !active;
+      });
+    };
+  });
+  app.querySelector('#chat').onclick = openManager;
+}
+
 function corporate(){app.innerHTML=`<div class="narrow"><div class="page-intro"><div class="eyebrow section-label">Ясница для компаний</div><h1>Работа родителей.<br>Волшебство для детей.</h1><p class="muted">Начните с демо «Моя мама делает чудеса». Затем обсудим вашу компанию, профессию родителей и возможную персонализацию.</p></div>${card(stories[2])}<section class="section form-card"><h2>Расскажите о вашей идее</h2><p class="muted">В чате укажите компанию, повод, число семей и желаемую дату. Мы отдельно оценим сюжет, объём персонализации и небольшой пилот.</p><button class="btn" id="chat">Обсудить с Ясницей ↗</button></section></div>`;app.querySelector('[data-play]').onclick=()=>play('corporate');app.querySelector('[data-pick]').onclick=()=>app.querySelector('#chat').focus();app.querySelector('#chat').onclick=openManager;}
 const screens = {home, stories: catalogue, brief, about, corporate};
 
