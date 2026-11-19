@@ -90,6 +90,18 @@ nav a:hover, nav a[aria-current] { color: var(--accent); text-decoration: underl
 .steps li { border-top: 1px solid var(--line); padding: .85rem 0 0 }
 .step-no { font-size: .9rem; color: var(--accent); font-weight: 750; display: block; margin-bottom: .35rem }
 .steps h3,.scope-grid h3 { font-size: 1.35rem; margin-bottom: .5rem }
+.pricing-grid { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(0,.95fr); gap: clamp(1.25rem,4vw,3.75rem); align-items: start }
+.price-sheet { overflow: hidden; border: 1px solid var(--line); background: var(--paper); border-radius: var(--radius) }
+.price-sheet table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums }
+.price-sheet th,.price-sheet td { padding: .64rem clamp(.85rem,3vw,1.3rem); text-align: left }
+.price-sheet thead th { background: var(--wash); color: var(--accent); font-size: .88rem }
+.price-sheet tbody tr + tr { border-top: 1px solid var(--line) }
+.price-sheet tbody th { font-weight: 600 }
+.price-sheet td,.price-sheet th:last-child { text-align: right; white-space: nowrap }
+.price-sheet td { font-weight: 750 }
+.price-notes h3 { font-size: 1.28rem; margin-bottom: .45rem }
+.price-notes p { color: var(--muted); margin-bottom: 1.05rem }
+.price-notes .buttons { margin-top: 1.3rem }
 .about { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; border-top: 1px solid var(--line); align-items: center }
 .about .button { margin-top: 1rem }
 .faq { display: grid; grid-template-columns: .8fr 1.2fr; gap: 2rem 3rem }
@@ -155,7 +167,7 @@ textarea { min-width: 0; resize: vertical; padding: .75rem; background: var(--bg
   .top-inner { flex-wrap: wrap; gap: .5rem; padding: .65rem 0 }
   nav { order: 3; width: 100%; gap: .5rem 1rem; flex-wrap: wrap; padding-top: .2rem }
   nav a { padding-block: .32rem; font-size: .9rem }
-  .hero,.business-hero,.faq,.about { grid-template-columns: 1fr; gap: 1.45rem }
+  .hero,.business-hero,.faq,.about,.pricing-grid { grid-template-columns: 1fr; gap: 1.45rem }
   .hero { padding-block: 2.25rem }
   .hero-art { margin-inline: .4rem .65rem; transform: rotate(1.4deg) }
   .hero-film { aspect-ratio: 1.23 }

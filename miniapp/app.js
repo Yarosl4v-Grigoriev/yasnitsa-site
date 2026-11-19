@@ -1,10 +1,10 @@
-import { stories, validateBrief, formatBrief, faq } from './domain.js?v=journey-20261119';
+import { stories, validateBrief, formatBrief, faq, priceRows } from './domain.js?v=prices-20261119';
 const app = document.querySelector('#app');
 const tg = window.Telegram?.WebApp;
 let filter = 'all', selected = 'custom', draft = {}, reviewing = false;
 let currentPage = 'home';
 const initialPage = new URLSearchParams(location.search).get('view') === 'brief' ? 'brief' : 'home';
-const returnPages = {brief: 'home', corporate: 'home', about: 'home'};
+const returnPages = {brief: 'home', corporate: 'home', about: 'home', prices: 'home'};
 let faqTopic = faq[0].id;
 const e = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const manager='https://t.me/manageryas';
@@ -131,7 +131,7 @@ function brief() {
     <div class="brief-wrap">
       <div class="page-intro">
         <h1>Заказать мультфильм</h1>
-        <p class="muted">Расскажите идею и повод. Здесь вы подготовите черновик. Фото для первого сообщения не нужны.</p>
+        <p class="muted">Расскажите идею и повод. Здесь вы подготовите черновик. Фото для первого сообщения не нужны. <a href="#prices" class="text-button">Посмотреть цены</a></p>
       </div>
       <form class="form-card" id="brief-form">
         <div class="form-grid">
@@ -246,7 +246,7 @@ function about() {
           ${topic.questions.map(([question, answer]) => `
             <details>
               <summary><span>${e(question)}</span><span class="faq-plus" aria-hidden="true"></span></summary>
-              <p>${e(answer)}</p>
+              <p>${e(answer)}${question === 'Сколько стоит мультфильм?' ? ' <a href="#prices" class="text-button">Открыть прайс</a>.' : ''}</p>
             </details>`).join('')}
         </section>`).join('')}
       <aside class="faq-contact">
@@ -268,13 +268,37 @@ function about() {
 }
 
 function corporate(){app.innerHTML=`<div class="narrow"><div class="page-intro"><div class="eyebrow section-label">Ясница для компаний</div><h1>Работа родителей.<br>Волшебство для детей.</h1><p class="muted">Начните с демо «Моя мама делает чудеса». Затем обсудим вашу компанию, профессию родителей и возможную персонализацию.</p></div>${card(stories[2])}<section class="section form-card"><h2>Расскажите о вашей идее</h2><p class="muted">В чате укажите компанию, повод, число семей и желаемую дату. Мы отдельно оценим сюжет, объём персонализации и небольшой пилот.</p><button class="btn" id="chat">Обсудить с Ясницей ↗</button></section></div>`;app.querySelector('[data-play]').onclick=()=>play('corporate');app.querySelector('[data-pick]').onclick=()=>app.querySelector('#chat').focus();app.querySelector('#chat').onclick=openManager;}
-const screens = {home, stories: catalogue, brief, about, corporate};
+function prices() {
+  const rubles = new Intl.NumberFormat('ru-RU');
+  app.innerHTML = `
+    <section class="narrow">
+      <div class="page-intro">
+        <h1 id="price-title">Цены на мультфильмы</h1>
+        <p class="muted">Для историй с одним главным героем. Итоговую цену фиксируем до начала работы.</p>
+      </div>
+      <div class="price-sheet">
+        <table aria-labelledby="price-title">
+          <thead><tr><th scope="col">Длительность</th><th scope="col">Стоимость</th></tr></thead>
+          <tbody>${priceRows.map(([duration, amount]) => `
+            <tr><th scope="row">${e(duration)}</th><td>${rubles.format(amount)} ₽</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+      <p class="muted">С 61-й по 180-ю секунду добавляем 60 ₽ за секунду. С 181-й по 300-ю секунду добавляем 70 ₽ за секунду. Истории дольше 5 минут и дополнительные герои считаем отдельно.</p>
+      <h2>Что входит</h2>
+      <p class="muted">Сюжет, образ героя по фото, пробная сцена, озвучка, музыка, до двух точечных правок и готовый MP4.</p>
+      <div class="actions"><a href="#brief" class="btn sun">Заполнить заявку</a><a href="https://vk.com/studyyasnitsa" class="btn outline" target="_blank" rel="noopener">Ясница ВКонтакте</a></div>
+    </section>`;
+}
+
+const screens = {home, stories: catalogue, brief, about, corporate, prices};
 
 function render() {
   const next = location.hash.slice(1);
   const page = Object.hasOwn(screens, next) ? next : initialPage;
   if (page !== currentPage && Object.hasOwn(returnPages, page)) {
-    returnPages[page] = currentPage === 'stories' ? 'stories' : 'home';
+    returnPages[page] = page === 'prices' && ['brief', 'about'].includes(currentPage)
+      ? currentPage
+      : currentPage === 'stories' ? 'stories' : 'home';
   }
   currentPage = page;
   document.querySelectorAll('[data-nav]').forEach(link => {
