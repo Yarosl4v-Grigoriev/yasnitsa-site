@@ -83,8 +83,7 @@ nav a:hover, nav a[aria-current] { color: var(--accent); text-decoration: underl
 .offer { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: .8rem; background: var(--wash); border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(1.25rem,3vw,2rem) }
 .offer-icon { color: var(--accent); font-size: 2rem; line-height: 1 }
 .offer .button { margin-top: auto }
-.unavailable { background: var(--warm); overflow: hidden }
-.unavailable .ribbon { background: var(--sun); color: #332e16; font-size: .85rem; font-weight: 760; padding: .55rem 1rem; align-self: stretch; margin: auto calc(-1 * clamp(1.25rem,3vw,2rem)) .15rem; text-align: center; background-image: repeating-linear-gradient(135deg,transparent 0 12px,#97780712 12px 21px) }
+.offer.request { background: var(--warm) }
 .process { margin-top: 2.1rem }
 .subheading { margin-bottom: 1rem }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1.25rem }
@@ -182,3 +181,6 @@ textarea { min-width: 0; resize: vertical; padding: .75rem; background: var(--bg
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { transition: none !important; scroll-behavior: auto !important }
 }
+
+.video-status { padding: .7rem 1rem; color: var(--ink); }
+.video-status a { text-decoration: underline; }

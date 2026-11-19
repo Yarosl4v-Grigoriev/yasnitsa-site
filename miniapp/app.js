@@ -1,4 +1,4 @@
-import { stories, validateBrief, formatBrief, faq } from './domain.js?v=faq-20261119';
+import { stories, validateBrief, formatBrief, faq } from './domain.js?v=journey-20261119';
 const app = document.querySelector('#app');
 const tg = window.Telegram?.WebApp;
 let filter = 'all', selected = 'custom', draft = {}, reviewing = false;
@@ -9,11 +9,26 @@ let faqTopic = faq[0].id;
 const e = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const manager='https://t.me/manageryas';
 function toast(text){const el=document.querySelector('#toast');el.textContent=text;el.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.style.display='none',4000);}
-function openManager(message = '') {
+function managerURL(message = '') {
   const url = new URL(manager);
-  if (typeof message === 'string' && message) url.searchParams.set('text', message);
-  if (tg?.openTelegramLink) tg.openTelegramLink(url.href);
-  else window.open(url.href, '_blank', 'noopener,noreferrer');
+  if (message) url.searchParams.set('text', message);
+  return url.href;
+}
+
+function openManager(event) {
+  if (event?.currentTarget?.tagName === 'A' &&
+      (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
+  const href = event?.currentTarget?.href || manager;
+  try {
+    if (tg?.initData && tg.openTelegramLink) {
+      tg.openTelegramLink(href);
+      event?.preventDefault();
+      return;
+    }
+  } catch {
+    // The browser link also works when Telegram cannot handle the request.
+  }
+  if (event?.currentTarget?.tagName !== 'A') location.href = href;
 }
 
 function theme() {
@@ -29,6 +44,10 @@ if (tg) {
 
 const player = document.querySelector('#player');
 const video = player.querySelector('video');
+const playerError = player.querySelector('.player-error');
+video.addEventListener('error', () => {
+  if (player.open && video.hasAttribute('src')) playerError.hidden = false;
+});
 let expandedApp = false;
 
 function syncBackButton() {
@@ -40,12 +59,13 @@ function play(id) {
   const story = stories.find(item => item.id === id);
   if (!story) return;
   const media = `../assets/${id}.mp4`;
+  playerError.hidden = true;
   video.preload = 'metadata';
   video.src = media;
   video.poster = `../assets/${id}.jpg`;
   player.querySelector('.player-link').href = media;
   player.querySelector('h2').textContent = story.title;
-  player.querySelector('p').textContent = 'Демонстрационный ролик. Визуальные материалы созданы с помощью ИИ.';
+  player.querySelector('h2 + p').textContent = 'Демонстрационный ролик. Визуальные материалы созданы с помощью ИИ.';
   player.showModal();
   syncBackButton();
   video.play().catch(() => {});
@@ -111,7 +131,7 @@ function brief() {
     <div class="brief-wrap">
       <div class="page-intro">
         <h1>Заказать мультфильм</h1>
-        <p class="muted">Расскажите идею и повод. Менеджер ответит в Telegram, обсудит сюжет, цену и срок.</p>
+        <p class="muted">Расскажите идею и повод. Здесь вы подготовите черновик. Фото для первого сообщения не нужны.</p>
       </div>
       <form class="form-card" id="brief-form">
         <div class="form-grid">
@@ -139,7 +159,7 @@ function brief() {
         </details>
         <label class="check">
           <input name="consent" type="checkbox" required ${draft.consent ? 'checked' : ''}>
-          <span>Хочу передать пожелания менеджеру. Если указал сведения о ребёнке, у меня есть право их передать.</span>
+          <span>Я хочу передать пожелания менеджеру. Если я указал данные ребёнка, у меня есть право их передать.</span>
         </label>
         <p class="error" role="alert" id="form-error" hidden></p>
         <button class="btn full" type="submit">Проверить заявку</button>
@@ -185,7 +205,7 @@ function review() {
       <section class="form-card">
         <div class="summary" id="summary"></div>
         <div class="actions">
-          <button class="btn" id="send-request" type="button">Открыть заявку у менеджера</button>
+          <a class="btn" id="send-request" href="${e(managerURL(text))}" target="_blank" rel="noopener noreferrer">Открыть черновик в Telegram</a>
           <button class="btn outline" id="copy" type="button">Скопировать текст</button>
         </div>
         <div id="copy-fallback" hidden>
@@ -195,7 +215,7 @@ function review() {
       </section>
     </div>`;
   app.querySelector('#summary').textContent = text;
-  app.querySelector('#send-request').onclick = () => openManager(text);
+  app.querySelector('#send-request').onclick = openManager;
   app.querySelector('#copy').onclick = async () => {
     try {
       await navigator.clipboard.writeText(text);

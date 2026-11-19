@@ -154,6 +154,10 @@ document.querySelector('#order-form').addEventListener('submit', event => event.
 function normalClick(event) {
   return event.button === 0 && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey;
 }
+const videoStatus = videoDialog.querySelector('.video-status');
+video.addEventListener('error', () => {
+  if (videoDialog.open && video.hasAttribute('src')) videoStatus.hidden = false;
+});
 for (const link of document.querySelectorAll('[data-video]')) {
   link.addEventListener('click', event => {
     if (!normalClick(event) || !videoDialog.showModal) return;
@@ -161,6 +165,9 @@ for (const link of document.querySelectorAll('[data-video]')) {
     opener = link;
     currentVideo = link;
     document.querySelector('#video-title').textContent = pick(link.dataset.titleRu, link.dataset.titleEn);
+    videoStatus.hidden = true;
+    videoStatus.querySelector('a').href = link.href;
+    video.poster = link.querySelector('img')?.currentSrc || '';
     video.preload = 'metadata';
     video.src = link.href;
     videoDialog.showModal();
