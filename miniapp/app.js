@@ -1,24 +1,252 @@
 import { stories, validateBrief, formatBrief } from './domain.js';
 const app = document.querySelector('#app');
 const tg = window.Telegram?.WebApp;
-let filter='all', selected='star', draft={}, reviewing=false;
+let filter = 'all', selected = 'custom', draft = {}, reviewing = false;
+let currentPage = 'home';
+const initialPage = new URLSearchParams(location.search).get('view') === 'brief' ? 'brief' : 'home';
+const returnPages = {brief: 'home', corporate: 'home', about: 'home'};
 const e = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const manager='https://t.me/manageryas';
 function toast(text){const el=document.querySelector('#toast');el.textContent=text;el.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.style.display='none',4000);}
-function openManager(){if(tg?.openTelegramLink)tg.openTelegramLink(manager);else window.open(manager,'_blank','noopener,noreferrer');}
-function theme(){document.documentElement.dataset.theme=tg?.colorScheme==='dark'?'dark':'light';}
-if(tg){tg.ready();tg.expand();theme();tg.onEvent('themeChanged',theme);}
-function play(id){const story=stories.find(s=>s.id===id);const dlg=document.querySelector('#player');const video=dlg.querySelector('video');video.preload='metadata';video.src=`../assets/${id}.mp4`;video.poster=`../assets/${id}.jpg`;dlg.querySelector('h2').textContent=story.title;dlg.querySelector('p').textContent='Демонстрационный ролик. Образ ребёнка и поздравление согласуем отдельно. Визуальные материалы созданы с помощью ИИ.';dlg.showModal();video.play().catch(()=>{});}
-const player=document.querySelector('#player');player.querySelector('.close').onclick=()=>player.close();player.addEventListener('close',()=>{player.querySelector('video').pause();player.querySelector('video').removeAttribute('src');player.querySelector('video').load();});player.addEventListener('click',ev=>{if(ev.target===player){const r=player.getBoundingClientRect();if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom)player.close();}});
-function pick(id){selected=id;draft.story=id;reviewing=false;location.hash='brief';if(location.hash==='#brief')render();}
+function openManager(message = '') {
+  const url = new URL(manager);
+  if (typeof message === 'string' && message) url.searchParams.set('text', message);
+  if (tg?.openTelegramLink) tg.openTelegramLink(url.href);
+  else window.open(url.href, '_blank', 'noopener,noreferrer');
+}
+
+function theme() {
+  document.documentElement.dataset.theme = tg?.colorScheme === 'dark' ? 'dark' : 'light';
+}
+if (tg) {
+  tg.ready();
+  tg.expand();
+  theme();
+  tg.onEvent('themeChanged', theme);
+  tg.BackButton?.onClick(back);
+}
+
+const player = document.querySelector('#player');
+const video = player.querySelector('video');
+let expandedApp = false;
+
+function syncBackButton() {
+  if (player.open || currentPage !== 'home') tg?.BackButton?.show();
+  else tg?.BackButton?.hide();
+}
+
+function play(id) {
+  const story = stories.find(item => item.id === id);
+  if (!story) return;
+  const media = `../assets/${id}.mp4`;
+  video.preload = 'metadata';
+  video.src = media;
+  video.poster = `../assets/${id}.jpg`;
+  player.querySelector('.player-link').href = media;
+  player.querySelector('h2').textContent = story.title;
+  player.querySelector('p').textContent = 'Демонстрационный ролик. Визуальные материалы созданы с помощью ИИ.';
+  player.showModal();
+  syncBackButton();
+  video.play().catch(() => {});
+}
+
+async function fullscreenVideo() {
+  if (video.webkitSupportsFullscreen && typeof video.webkitEnterFullscreen === 'function') {
+    try { video.webkitEnterFullscreen(); return; } catch {}
+  }
+  if (video.requestFullscreen) {
+    try { await video.requestFullscreen(); return; } catch {}
+  }
+  player.classList.add('player-expanded');
+  if (!tg?.isFullscreen && tg?.isVersionAtLeast?.('8.0') && tg.requestFullscreen) {
+    try {
+      tg.requestFullscreen();
+      expandedApp = true;
+    } catch {}
+  }
+}
+
+player.querySelector('.player-back').onclick = () => player.close();
+document.querySelector('#fullscreen-video').onclick = fullscreenVideo;
+player.addEventListener('close', () => {
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  player.classList.remove('player-expanded');
+  if (expandedApp) {
+    expandedApp = false;
+    if (tg?.isFullscreen) tg.exitFullscreen?.();
+  }
+  syncBackButton();
+});
+player.addEventListener('click', event => {
+  if (event.target !== player) return;
+  const rect = player.getBoundingClientRect();
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top ||
+      event.clientY > rect.bottom) player.close();
+});
+
+function pick(id) {
+  selected = id;
+  draft.story = id;
+  reviewing = false;
+  if (location.hash === '#brief') render();
+  else location.hash = 'brief';
+}
+
 function card(s){return `<article class="story"><button class="poster" data-play="${s.id}" aria-label="Смотреть демо: ${e(s.title)}"><img src="../assets/${s.id}.jpg" alt="Кадр из мультфильма «${e(s.title)}»" loading="lazy"><span class="play" aria-hidden="true">▶</span><span class="duration">Демо · ${s.duration}</span></button><div class="story-body"><span class="badge ${s.id==='dragon'?'gold':''}">${s.badge}</span><h3>${s.title}</h3><p>${s.description}</p><div class="story-bottom"><small>${s.id==='corporate'?'Отдельный бриф':'Имя · образ · поздравление'}</small><button class="text-button" data-pick="${s.id}">${s.id==='corporate'?'Обсудить идею':'Выбрать историю'} ↗</button></div></div></article>`;}
 function bind(){app.querySelectorAll('[data-play]').forEach(b=>b.onclick=()=>play(b.dataset.play));app.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>b.dataset.pick==='corporate'?location.hash='corporate':pick(b.dataset.pick));}
-function home(){app.innerHTML=`<section class="hero"><div><div class="eyebrow">Маленький герой. Большая история.</div><h1>Сказка, в которой<br>главный герой —<br><em>ваш ребёнок.</em></h1><p>Знакомое имя, любимый образ и история, которую захочется пересмотреть всей семьёй.</p><a href="#stories" class="btn sun">Найти свою историю <span aria-hidden="true">↗</span></a></div><div class="hero-art"><img class="hero-photo" src="../assets/dragon.jpg" alt="Маленький герой помогает дракону"><div class="sun-disc" aria-hidden="true">✦</div><div class="little-note"><strong>Для самого важного зрителя</strong>С теплом, от вашей семьи</div></div></section><section class="section"><div class="section-head"><h2>С чего начнётся сказка?</h2><a href="#stories">Все истории ↗</a></div><div class="stories">${stories.slice(0,2).map(card).join('')}</div></section><section class="section"><div class="section-head"><h2>От идеи до «ещё раз!»</h2></div><div class="steps"><div class="step"><b>01 /</b><strong>Выбираем историю</strong><p>Вы рассказываете о ребёнке и поводе. Мы уточняем пожелания.</p></div><div class="step"><b>02 /</b><strong>Согласуем детали</strong><p>Образ, имя и поздравление — до производства мультфильма.</p></div><div class="step"><b>03 /</b><strong>Создаём и проверяем</strong><p>Собираем сцены в историю и проверяем фильм перед выдачей.</p></div></div></section><section class="section corporate"><img src="../assets/corporate.jpg" alt="Семья в корпоративном мультфильме" loading="lazy"><div><div class="eyebrow section-label">Для компаний</div><h2>Когда работа родителей<br>становится чудом</h2><p class="muted">Персональная история для семей ваших сотрудников. Начнём с идеи и небольшого пилота.</p><a href="#corporate" class="text-button">Обсудить корпоративную историю ↗</a></div></section><p class="footer-note">Ясница · истории, которые становятся вашими</p>`;bind();}
-function catalogue(){app.innerHTML=`<div class="page-intro"><div class="eyebrow section-label">Библиотека маленьких чудес</div><h1>Найдём вашу историю</h1><p class="muted">Сначала посмотрите демо. Затем выберите основу для своего мультфильма.</p></div><div class="filters" aria-label="Фильтр историй">${[['all','Все истории'],['newyear','Новый год'],['birthday','День рождения'],['corporate','Для компаний']].map(([id,t])=>`<button class="chip ${filter===id?'active':''}" data-filter="${id}" aria-pressed="${filter===id}">${t}</button>`).join('')}</div><div class="stories">${stories.filter(s=>filter==='all'||s.category===filter).map(card).join('')}</div>`;bind();app.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;catalogue();});}
-function brief(){if(reviewing){review();return;}const value=k=>e(draft[k]||'');app.innerHTML=`<div class="brief-wrap"><div class="page-intro"><div class="eyebrow section-label">Начало вашей истории</div><h1>Познакомимся с героем</h1><p class="muted">Эти пожелания помогут менеджеру обсудить с вами мультфильм. Заполнение брифа не запускает производство.</p></div><div class="progress" aria-label="Шаг 1 из 2"><span class="done"></span><span></span></div><form class="form-card" id="brief-form"><div class="form-grid"><label class="field wide">Ваша история<select name="story">${stories.slice(0,2).map(s=>`<option value="${s.id}" ${(draft.story||selected)===s.id?'selected':''}>${s.title}</option>`).join('')}</select></label><label class="field">Имя ребёнка<input name="name" autocomplete="off" maxlength="60" required value="${value('name')}" placeholder="Например, Миша"></label><label class="field">Возраст<input name="age" type="number" inputmode="numeric" min="1" max="17" required value="${value('age')}" placeholder="Полных лет"></label><label class="field wide">Как произносить имя<input name="pronunciation" maxlength="100" value="${value('pronunciation')}" placeholder="Ударение, ласковая форма — по желанию"></label><label class="field">Повод<input name="occasion" maxlength="100" minlength="2" required value="${value('occasion')}" placeholder="Новый год, день рождения…"></label><label class="field">Желаемая дата вручения<input name="date" type="date" value="${value('date')}"></label><label class="field wide">Что сказать в поздравлении?<textarea name="greeting" maxlength="250" placeholder="Несколько тёплых слов от вашей семьи">${value('greeting')}</textarea></label><label class="field wide">Что ещё важно учесть?<textarea name="notes" maxlength="500" placeholder="Интересы ребёнка, особенности образа, темы, которых лучше избегать">${value('notes')}</textarea></label></div><p class="hint">Фотографию сейчас не загружаем. Если она потребуется для образа, менеджер отдельно согласует способ передачи и использования.</p><label class="check"><input name="consent" type="checkbox" required ${draft.consent?'checked':''}><span>Хочу обсудить мультфильм и передать менеджеру указанные пожелания. Заполняю бриф как родитель или законный представитель ребёнка.</span></label><p class="error" role="alert" id="form-error" hidden></p><button class="btn full" type="submit">Проверить бриф <span aria-hidden="true">→</span></button><p class="hint" style="margin:14px 0 0">Цену, срок и состав работ согласуем до начала производства. Дата вручения — пожелание, которое ещё нужно подтвердить.</p></form></div>`;const form=app.querySelector('form');function capture(){draft=Object.fromEntries(new FormData(form));draft.consent=form.elements.consent.checked;}form.oninput=capture;form.onsubmit=ev=>{ev.preventDefault();capture();const error=validateBrief(draft);if(error){const el=app.querySelector('#form-error');el.textContent=error;el.hidden=false;return;}reviewing=true;render();};}
-function review(){app.innerHTML=`<div class="brief-wrap"><div class="page-intro"><div class="eyebrow section-label">Остался один шаг</div><h1>Всё верно?</h1><p class="muted">Скопируйте бриф и отправьте его менеджеру. Пока вы не отправили сообщение, заявка не передана.</p></div><div class="progress" aria-label="Шаг 2 из 2"><span class="done"></span><span class="done"></span></div><section class="form-card"><div class="summary" id="summary"></div><div class="actions"><button class="btn" id="copy">Скопировать бриф</button><button class="btn outline" id="open-bot">Открыть чат менеджера</button></div><button class="text-button" id="edit">← Изменить детали</button><div class="info">Откройте чат менеджера, вставьте бриф и отправьте сообщение. Стоимость, сроки и правки обсудите в переписке.</div><div id="copy-fallback" hidden><p class="hint">Автоматическое копирование недоступно. Выделите и скопируйте текст ниже.</p><textarea readonly aria-label="Бриф для ручного копирования"></textarea></div></section></div>`;const text=formatBrief(draft);app.querySelector('#summary').textContent=text;app.querySelector('#open-bot').onclick=openManager;app.querySelector('#edit').onclick=()=>{reviewing=false;render();};app.querySelector('#copy').onclick=async()=>{try{await navigator.clipboard.writeText(text);toast('Бриф скопирован. Отправьте его в чат Ясницы.');}catch{const box=app.querySelector('#copy-fallback');box.hidden=false;box.querySelector('textarea').value=text;box.querySelector('textarea').select();toast('Скопируйте выделенный текст вручную.');}};}
-function about(){app.innerHTML=`<div class="narrow"><div class="page-intro"><div class="eyebrow section-label">Рядом на каждом шаге</div><h1>Как всё устроено</h1><p class="muted">Мы начинаем с разговора, согласуем детали и проверяем каждый фильм перед выдачей.</p></div><section class="form-card">${[['Что входит в персонализацию?','Имя и его произношение, согласованный образ ребёнка и финальное поздравление. Основная история сохраняется.'],['Каким будет мультфильм?','Первый семейный формат — один ребёнок и готовая сюжетная основа на 40–60 секунд. Демо «Звезды» длится 41 секунду, «Фонарика» — 40,5 секунды.'],['Насколько герой будет похож?','До анимации согласуем образ. Мы не обещаем точную копию внешности.'],['Сколько стоит и когда будет готово?','Цена, срок, состав работ и условия изменений согласуются с менеджером до производства.'],['Где мои фотографии?','В этой версии приложения фотографии не запрашиваются и не загружаются. Черновик брифа хранится только в памяти открытой страницы и исчезнет при её перезагрузке.'],['Где мой заказ?','Пока приложение помогает выбрать историю и подготовить бриф. Подтверждённый статус заказа уточняйте в чате Ясницы.']].map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join('')}<div class="actions"><button class="btn" id="chat">Открыть чат менеджера</button></div><p class="hint">Чат — начало обсуждения. Подготовленная в приложении заявка не считается отправленной автоматически.</p></section></div>`;app.querySelector('#chat').onclick=openManager;}
+function home(){app.innerHTML=`<section class="hero"><div><div class="eyebrow">Маленький герой. Большая история.</div><h1>Сказка, в которой<br>главный герой —<br><em>ваш ребёнок.</em></h1><p>Знакомое имя, любимый образ и история, которую захочется пересмотреть всей семьёй.</p><div class="actions"><a href="#brief" class="btn sun">Заказать свою историю</a><a href="#stories" class="btn outline">Смотреть примеры</a></div></div><div class="hero-art"><img class="hero-photo" src="../assets/dragon.jpg" alt="Маленький герой помогает дракону"><div class="sun-disc" aria-hidden="true">✦</div><div class="little-note"><strong>Для самого важного зрителя</strong>С теплом, от вашей семьи</div></div></section><section class="section"><div class="section-head"><h2>С чего начнётся сказка?</h2><a href="#stories">Все истории ↗</a></div><div class="stories">${stories.slice(0,2).map(card).join('')}</div></section><section class="section"><div class="section-head"><h2>От идеи до «ещё раз!»</h2></div><div class="steps"><div class="step"><b>01 /</b><strong>Выбираем историю</strong><p>Вы рассказываете о ребёнке и поводе. Мы уточняем пожелания.</p></div><div class="step"><b>02 /</b><strong>Согласуем детали</strong><p>Образ, имя и поздравление — до производства мультфильма.</p></div><div class="step"><b>03 /</b><strong>Создаём и проверяем</strong><p>Собираем сцены в историю и проверяем фильм перед выдачей.</p></div></div></section><section class="section corporate"><img src="../assets/corporate.jpg" alt="Семья в корпоративном мультфильме" loading="lazy"><div><div class="eyebrow section-label">Для компаний</div><h2>Когда работа родителей<br>становится чудом</h2><p class="muted">Персональная история для семей ваших сотрудников. Начнём с идеи и небольшого пилота.</p><a href="#corporate" class="text-button">Обсудить корпоративную историю ↗</a></div></section><p class="footer-note">Ясница · истории, которые становятся вашими</p>`;bind();}
+function catalogue(){app.innerHTML=`<div class="page-intro"><div class="eyebrow section-label">Библиотека маленьких чудес</div><h1>Найдём вашу историю</h1><p class="muted">Выберите готовую основу или расскажите менеджеру свой сюжет.</p></div><a class="btn sun" href="#brief" id="custom-story">Рассказать свою историю</a><div class="filters" aria-label="Фильтр историй">${[['all','Все истории'],['newyear','Новый год'],['birthday','День рождения'],['corporate','Для компаний']].map(([id,t])=>`<button class="chip ${filter===id?'active':''}" data-filter="${id}" aria-pressed="${filter===id}">${t}</button>`).join('')}</div><div class="stories">${stories.filter(s=>filter==='all'||s.category===filter).map(card).join('')}</div>`;bind();app.querySelector('#custom-story').onclick = event => { event.preventDefault(); pick('custom'); };app.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;catalogue();});}
+function brief() {
+  if (reviewing) {
+    review();
+    return;
+  }
+  const value = name => e(draft[name] || '');
+  const kind = draft.story || selected;
+  const options = [{id: 'custom', title: 'Своя история'}, ...stories.slice(0, 2)];
+  app.innerHTML = `
+    <div class="brief-wrap">
+      <div class="page-intro">
+        <h1>Заказать мультфильм</h1>
+        <p class="muted">Расскажите идею и повод. Менеджер ответит в Telegram, обсудит сюжет, цену и срок.</p>
+      </div>
+      <form class="form-card" id="brief-form">
+        <div class="form-grid">
+          <label class="field wide">Сюжет
+            <select name="story">${options.map(item => `<option value="${item.id}" ${kind === item.id ? 'selected' : ''}>${item.title}</option>`).join('')}</select>
+          </label>
+          <label class="field wide" id="idea-field">О чём будет ваша история?
+            <textarea name="idea" maxlength="350" placeholder="Например, юная исследовательница находит город под водой">${value('idea')}</textarea>
+          </label>
+          <label class="field">Повод<input name="occasion" maxlength="100" minlength="2" required value="${value('occasion')}" placeholder="День рождения, подарок, семейный праздник"></label>
+          <label class="field">Желаемая дата<input name="date" type="date" value="${value('date')}"></label>
+        </div>
+        <details class="optional-details" ${draft.name || draft.age || draft.greeting || draft.notes || draft.pronunciation ? 'open' : ''}>
+          <summary>Добавить детали о герое и поздравлении</summary>
+          <div class="form-grid">
+            <label class="field">Имя героя<input name="name" autocomplete="off" maxlength="60" value="${value('name')}"></label>
+            <label class="field">Возраст ребёнка<input name="age" type="number" inputmode="numeric" min="1" max="17" value="${value('age')}"></label>
+            <label class="field wide">Как произносить имя<input name="pronunciation" maxlength="100" value="${value('pronunciation')}"></label>
+            <label class="field wide">Поздравление<textarea name="greeting" maxlength="250">${value('greeting')}</textarea></label>
+            <label class="field wide">Другие пожелания<textarea name="notes" maxlength="500">${value('notes')}</textarea></label>
+          </div>
+        </details>
+        <label class="check">
+          <input name="consent" type="checkbox" required ${draft.consent ? 'checked' : ''}>
+          <span>Хочу передать пожелания менеджеру. Если указал сведения о ребёнке, у меня есть право их передать.</span>
+        </label>
+        <p class="error" role="alert" id="form-error" hidden></p>
+        <button class="btn full" type="submit">Проверить заявку</button>
+      </form>
+    </div>`;
+  const form = app.querySelector('form');
+  const idea = app.querySelector('#idea-field');
+  function updateIdeaField() {
+    const ownStory = form.elements.story.value === 'custom';
+    idea.hidden = !ownStory;
+    form.elements.idea.required = ownStory;
+  }
+  function capture() {
+    draft = Object.fromEntries(new FormData(form));
+    draft.consent = form.elements.consent.checked;
+    updateIdeaField();
+  }
+  updateIdeaField();
+  form.oninput = capture;
+  form.onsubmit = event => {
+    event.preventDefault();
+    capture();
+    const error = validateBrief(draft);
+    if (error) {
+      const note = app.querySelector('#form-error');
+      note.textContent = error;
+      note.hidden = false;
+      return;
+    }
+    reviewing = true;
+    render();
+  };
+}
+
+function review() {
+  const text = formatBrief(draft);
+  app.innerHTML = `
+    <div class="brief-wrap">
+      <div class="page-intro">
+        <h1>Проверьте заявку</h1>
+        <p class="muted">Заявка откроется черновиком у @manageryas. Нажмите «Отправить» в Telegram, чтобы менеджер её получил.</p>
+      </div>
+      <section class="form-card">
+        <div class="summary" id="summary"></div>
+        <div class="actions">
+          <button class="btn" id="send-request" type="button">Открыть заявку у менеджера</button>
+          <button class="btn outline" id="copy" type="button">Скопировать текст</button>
+        </div>
+        <div id="copy-fallback" hidden>
+          <p class="hint">Выделите и скопируйте текст ниже.</p>
+          <textarea readonly aria-label="Текст заявки"></textarea>
+        </div>
+      </section>
+    </div>`;
+  app.querySelector('#summary').textContent = text;
+  app.querySelector('#send-request').onclick = () => openManager(text);
+  app.querySelector('#copy').onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Текст заявки скопирован.');
+    } catch {
+      const box = app.querySelector('#copy-fallback');
+      box.hidden = false;
+      const field = box.querySelector('textarea');
+      field.value = text;
+      field.select();
+    }
+  };
+}
+
+function about(){app.innerHTML=`<div class="narrow"><div class="page-intro"><div class="eyebrow section-label">Рядом на каждом шаге</div><h1>Как всё устроено</h1><p class="muted">Мы начинаем с разговора, согласуем детали и проверяем каждый фильм перед выдачей.</p></div><section class="form-card">${[['Что входит в персонализацию?','Имя и его произношение, согласованный образ ребёнка и финальное поздравление. Основная история сохраняется.'],['Каким будет мультфильм?','Первый семейный формат — один ребёнок и готовая сюжетная основа на 40–60 секунд. Демо «Звезды» длится 41 секунду, «Фонарика» — 40,5 секунды.'],['Насколько герой будет похож?','До анимации согласуем образ. Мы не обещаем точную копию внешности.'],['Сколько стоит и когда будет готово?','Цена, срок, состав работ и условия изменений согласуются с менеджером до производства.'],['Где мои фотографии?','В этой версии приложения фотографии не запрашиваются и не загружаются. Черновик брифа хранится только в памяти открытой страницы и исчезнет при её перезагрузке.'],['Где мой заказ?','После отправки заявки менеджер уточнит детали и подтвердит условия в Telegram.']].map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join('')}<div class="actions"><button class="btn" id="chat">Открыть чат менеджера</button></div><p class="hint">Чат — начало обсуждения. Подготовленная в приложении заявка не считается отправленной автоматически.</p></section></div>`;app.querySelector('#chat').onclick=openManager;}
 function corporate(){app.innerHTML=`<div class="narrow"><div class="page-intro"><div class="eyebrow section-label">Ясница для компаний</div><h1>Работа родителей.<br>Волшебство для детей.</h1><p class="muted">Начните с демо «Моя мама делает чудеса». Затем обсудим вашу компанию, профессию родителей и возможную персонализацию.</p></div>${card(stories[2])}<section class="section form-card"><h2>Расскажите о вашей идее</h2><p class="muted">В чате укажите компанию, повод, число семей и желаемую дату. Мы отдельно оценим сюжет, объём персонализации и небольшой пилот.</p><button class="btn" id="chat">Обсудить с Ясницей ↗</button></section></div>`;app.querySelector('[data-play]').onclick=()=>play('corporate');app.querySelector('[data-pick]').onclick=()=>app.querySelector('#chat').focus();app.querySelector('#chat').onclick=openManager;}
-function render(){const route=location.hash.slice(1)||'home';document.querySelectorAll('[data-nav]').forEach(el=>{const active=el.dataset.nav===route;el.classList.toggle('active',active);if(active)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});({home,stories:catalogue,brief,about,corporate}[route]||home)();if(tg?.BackButton){tg.BackButton.offClick(back);if(route==='home')tg.BackButton.hide();else{tg.BackButton.show();tg.BackButton.onClick(back);}}window.scrollTo(0,0);}
-function back(){if(reviewing&&location.hash==='#brief'){reviewing=false;render();}else location.hash='home';}
-document.querySelector('#help').onclick=()=>location.hash='about';window.addEventListener('hashchange',render);render();
+const screens = {home, stories: catalogue, brief, about, corporate};
+
+function render() {
+  const next = location.hash.slice(1);
+  const page = Object.hasOwn(screens, next) ? next : initialPage;
+  if (page !== currentPage && Object.hasOwn(returnPages, page)) {
+    returnPages[page] = currentPage === 'stories' ? 'stories' : 'home';
+  }
+  currentPage = page;
+  document.querySelectorAll('[data-nav]').forEach(link => {
+    const active = link.dataset.nav === page;
+    link.classList.toggle('active', active);
+    if (active) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+  screens[page]();
+  if (page !== 'home') {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'page-back';
+    button.textContent = reviewing && page === 'brief' ? 'Назад к заявке' : 'Назад';
+    button.onclick = back;
+    app.prepend(button);
+  }
+  syncBackButton();
+  window.scrollTo(0, 0);
+}
+
+function back() {
+  if (player.open) {
+    player.close();
+  } else if (reviewing && currentPage === 'brief') {
+    reviewing = false;
+    render();
+  } else {
+    location.hash = returnPages[currentPage] || 'home';
+  }
+}
+
+document.querySelector('#help').onclick = () => location.hash = 'about';
+window.addEventListener('hashchange', render);
+render();

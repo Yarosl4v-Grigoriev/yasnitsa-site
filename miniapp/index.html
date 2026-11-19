@@ -10,8 +10,16 @@
 <body>
   <header class="header"><a href="#home" class="brand" aria-label="Ясница, главная"><img src="../assets/mark.svg" width="38" height="38" alt=""><span>Ясница<small>персональные мультфильмы</small></span></a><button class="icon-btn" id="help" aria-label="Как это работает">?</button></header>
   <main id="app"></main>
-  <nav class="bottom-nav" aria-label="Основная навигация"><a href="#home" data-nav="home"><span aria-hidden="true">⌂</span>Главная</a><a href="#stories" data-nav="stories"><span aria-hidden="true">▤</span>Истории</a><a href="#brief" data-nav="brief"><span aria-hidden="true">✎</span>Мой бриф</a></nav>
-  <dialog id="player"><button class="close" aria-label="Закрыть видео">×</button><video controls playsinline preload="none"></video><h2></h2><p></p></dialog>
+  <nav class="bottom-nav" aria-label="Основная навигация"><a href="#home" data-nav="home"><span aria-hidden="true">⌂</span>Главная</a><a href="#stories" data-nav="stories"><span aria-hidden="true">▤</span>Истории</a><a href="#brief" data-nav="brief"><span aria-hidden="true">✎</span>Заказать</a></nav>
+  <dialog id="player" aria-labelledby="player-title">
+    <div class="player-actions">
+      <button type="button" class="player-back">Назад</button>
+      <button type="button" id="fullscreen-video">На весь экран</button>
+    </div>
+    <video controls playsinline preload="none"></video>
+    <h2 id="player-title"></h2><p></p>
+    <a class="text-button player-link" href="../assets/dragon.mp4" target="_blank" rel="noopener">Открыть видео отдельно</a>
+  </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
