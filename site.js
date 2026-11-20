@@ -68,15 +68,38 @@ const orderDialog = document.querySelector('#order-dialog');
 const videoDialog = document.querySelector('#video-dialog');
 const video = videoDialog.querySelector('video');
 const brief = document.querySelector('#brief');
-const titles = {
-  family: ['Расскажите о будущем мультфильме', 'Tell us about your film'],
-  business: ['Расскажите о задаче компании', 'Tell us about your project'],
+const orderFormats = {
+  family: {
+    title: ['Расскажите о будущем мультфильме', 'Tell us about your film'],
+    topic: ['заказной мультфильм', 'a custom animated film'],
+  },
+  business: {
+    title: ['Расскажите о задаче компании', 'Tell us about your project'],
+    topic: ['ролик для компании', 'an animated film for our company'],
+    placeholder: ['Например: ролик о первом дне сотрудника', 'For example: a film about an employee’s first day'],
+  },
+  advertising: {
+    title: ['Расскажите о продукте', 'Tell us about your product'],
+    topic: ['рекламный ролик', 'an animated ad'],
+    placeholder: ['Что рекламируем, кто зритель и где выйдет ролик?', 'What are we promoting, who is it for, and where will it run?'],
+  },
+  wedding: {
+    title: ['Расскажите о вашей свадьбе', 'Tell us about your wedding'],
+    topic: ['свадебный мультфильм', 'a wedding film'],
+    placeholder: ['Дата свадьбы, история пары и когда хотите показать ролик', 'Wedding date, your story and when you want to show the film'],
+  },
+  events: {
+    title: ['Расскажите о мероприятии', 'Tell us about your event'],
+    topic: ['анимационный ролик для мероприятия', 'an animated film for an event'],
+    placeholder: ['Дата, площадка, аудитория и место ролика в программе', 'Date, venue, audience and where the film fits in the programme'],
+  },
 };
 const sun = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4m10.6 10.6 1.4 1.4m0-13.4-1.4 1.4M6.7 17.3l-1.4 1.4"/></svg>';
 const moon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M20.4 14.4A8.6 8.6 0 0 1 9.6 3.6a8.7 8.7 0 1 0 10.8 10.8Z"/></svg>';
 let lang = read('lang') === 'en' ? 'en' : 'ru';
 let wishIndex;
 let orderKind = 'family';
+const notesByFormat = new Map();
 let currentVideo;
 let opener;
 const pick = (ru, en) => lang === 'en' ? en : ru;
@@ -106,10 +129,9 @@ function newWish() {
 
 function updateDraft() {
   const note = brief.value.trim();
-  const subject = pick(...titles[orderKind]);
-  const intro = orderKind === 'business'
-    ? pick('Здравствуйте! Хочу обсудить ролик для компании.', 'Hello! I’d like to discuss an animated film for our company.')
-    : pick('Здравствуйте! Хочу обсудить заказной мультфильм.', 'Hello! I’d like to discuss a custom animated film.');
+  const {title, topic} = orderFormats[orderKind];
+  const subject = pick(...title);
+  const intro = pick(`Здравствуйте! Хочу обсудить ${topic[0]}.`, `Hello! I’d like to discuss ${topic[1]}.`);
   const body = note ? intro + '\n\n' + note : intro;
   document.querySelector('#telegram-draft').href =
     'https://t.me/manageryas?text=' + encodeURIComponent(body);
@@ -125,9 +147,10 @@ function applyLanguage() {
     if (el.hasAttribute('data-en-label')) el.setAttribute('aria-label', pick(ru.label, el.dataset.enLabel));
     if (el.hasAttribute('data-en-placeholder')) el.setAttribute('placeholder', pick(ru.placeholder, el.dataset.enPlaceholder));
   }
-  document.querySelector('#order-title').textContent = pick(...titles[orderKind]);
-  brief.placeholder = orderKind === 'business'
-    ? pick('Например: ролик о первом дне сотрудника', 'For example: a film about an employee’s first day')
+  const {title, placeholder} = orderFormats[orderKind];
+  document.querySelector('#order-title').textContent = pick(...title);
+  brief.placeholder = placeholder
+    ? pick(...placeholder)
     : pick(ruText.get(brief).placeholder, brief.dataset.enPlaceholder);
   if (currentVideo) {
     document.querySelector('#video-title').textContent = pick(currentVideo.dataset.titleRu, currentVideo.dataset.titleEn);
@@ -179,8 +202,9 @@ for (const link of document.querySelectorAll('[data-order]')) {
     if (!normalClick(event) || !orderDialog.showModal) return;
     event.preventDefault();
     opener = link;
-    if (orderKind !== link.dataset.order) brief.value = '';
+    notesByFormat.set(orderKind, brief.value);
     orderKind = link.dataset.order;
+    brief.value = notesByFormat.get(orderKind) || '';
     applyLanguage();
     orderDialog.showModal();
     brief.focus();

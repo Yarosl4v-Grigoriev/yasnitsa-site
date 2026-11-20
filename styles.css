@@ -196,3 +196,16 @@ textarea { min-width: 0; resize: vertical; padding: .75rem; background: var(--bg
 
 .video-status { padding: .7rem 1rem; color: var(--ink); }
 .video-status a { text-decoration: underline; }
+
+@media (min-width: 1080px) {
+  .featured-works { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+#works > .quiet-link + .quiet-link { margin-inline-start: 1.25rem; }
+.service-cards .use-card { display: flex; flex-direction: column; align-items: flex-start; }
+.service-cards .button { margin-top: auto; }
+.service-cards .use-card > p:not(.kicker) { color: var(--muted); margin-bottom: 1rem; }
+.service-note { color: var(--muted); margin-top: 1.2rem; }
+.event-demo-card { max-width: 44rem; }
+@media (max-width: 650px) {
+  #works > .quiet-link + .quiet-link { display: block; margin-inline-start: 0; }
+}
