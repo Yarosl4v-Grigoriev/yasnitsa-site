@@ -137,6 +137,7 @@ details p { color: var(--muted); padding-bottom: 1rem; padding-right: 1.2rem }
 .socials a:hover { background: #254138 }
 .socials strong,.socials span { display: block; }
 .socials span { font-size: .86rem; color: var(--footer-muted); overflow-wrap: anywhere }
+.footer .field-note { margin-bottom: 1.25rem }
 .wish { border: 1px solid #7b8052; border-radius: 1rem; background: #203a2e; color: #f9efd7; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .85rem 1.25rem; padding: 1.2rem }
 .wish-star,.wish .kicker { color: var(--sun) }
 .wish-star { font-size: 2rem; line-height: 1 }
