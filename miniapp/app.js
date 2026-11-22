@@ -1,4 +1,4 @@
-import { stories, validateBrief, formatBrief, faq, priceRows } from './domain.js?v=prices-20261119';
+import { stories, validateBrief, formatBrief, faq, priceRows } from './domain.js?v=guidelines-20261122';
 const app = document.querySelector('#app');
 const tg = window.Telegram?.WebApp;
 let filter = 'all', selected = 'custom', draft = {}, reviewing = false;
@@ -135,9 +135,6 @@ function brief() {
       </div>
       <form class="form-card" id="brief-form">
         <div class="form-grid">
-          <label class="field wide">Как к вам обращаться?
-            <input name="clientName" autocomplete="name" maxlength="60" value="${value('clientName')}" placeholder="Например, Анна">
-          </label>
           <label class="field wide">Сюжет
             <select name="story">${options.map(item => `<option value="${item.id}" ${kind === item.id ? 'selected' : ''}>${item.title}</option>`).join('')}</select>
           </label>
@@ -147,20 +144,7 @@ function brief() {
           <label class="field">Повод<input name="occasion" maxlength="100" minlength="2" required value="${value('occasion')}" placeholder="День рождения, подарок, семейный праздник"></label>
           <label class="field">Желаемая дата<input name="date" type="date" value="${value('date')}"></label>
         </div>
-        <details class="optional-details" ${draft.name || draft.age || draft.greeting || draft.notes || draft.pronunciation ? 'open' : ''}>
-          <summary>Добавить детали о герое и поздравлении</summary>
-          <div class="form-grid">
-            <label class="field">Имя героя<input name="name" autocomplete="off" maxlength="60" value="${value('name')}"></label>
-            <label class="field">Возраст ребёнка<input name="age" type="number" inputmode="numeric" min="1" max="17" value="${value('age')}"></label>
-            <label class="field wide">Как произносить имя<input name="pronunciation" maxlength="100" value="${value('pronunciation')}"></label>
-            <label class="field wide">Поздравление<textarea name="greeting" maxlength="250">${value('greeting')}</textarea></label>
-            <label class="field wide">Другие пожелания<textarea name="notes" maxlength="500">${value('notes')}</textarea></label>
-          </div>
-        </details>
-        <label class="check">
-          <input name="consent" type="checkbox" required ${draft.consent ? 'checked' : ''}>
-          <span>Я хочу передать пожелания менеджеру. Если я указал данные ребёнка, у меня есть право их передать.</span>
-        </label>
+        <p class="hint">Опишите сюжет, повод и дату. Фото и личные данные в заявку не добавляйте. <a href="../legal/#materials" class="text-button" target="_blank" rel="noopener noreferrer">Правила передачи материалов</a>.</p>
         <p class="error" role="alert" id="form-error" hidden></p>
         <button class="btn full" type="submit">Проверить заявку</button>
       </form>
@@ -174,7 +158,6 @@ function brief() {
   }
   function capture() {
     draft = Object.fromEntries(new FormData(form));
-    draft.consent = form.elements.consent.checked;
     updateIdeaField();
   }
   updateIdeaField();
@@ -200,7 +183,7 @@ function review() {
     <div class="brief-wrap">
       <div class="page-intro">
         <h1>Проверьте заявку</h1>
-        <p class="muted">Заявка откроется черновиком у @manageryas. Нажмите «Отправить» в Telegram, чтобы менеджер её получил.</p>
+        <p class="muted">Заявка откроется черновиком у @manageryas. Нажмите «Отправить» в Telegram, чтобы менеджер её получил. Перед отправкой проверьте, что в тексте нет личных данных героя и других людей.</p>
       </div>
       <section class="form-card">
         <div class="summary" id="summary"></div>
@@ -285,7 +268,7 @@ function prices() {
       </div>
       <p class="muted">С 61-й по 180-ю секунду добавляем 60 ₽ за секунду. С 181-й по 300-ю секунду добавляем 70 ₽ за секунду. Истории дольше 5 минут и дополнительные герои считаем отдельно.</p>
       <h2>Что входит</h2>
-      <p class="muted">Сюжет, образ героя по фото, пробная сцена, озвучка, музыка, до двух точечных правок и готовый MP4.</p>
+      <p class="muted">Сюжет, образ героя, пробная сцена, озвучка, музыка, до двух точечных правок и готовый MP4. Сейчас работаем по описанию.</p>
       <div class="actions"><a href="#brief" class="btn sun">Заполнить заявку</a><a href="https://vk.com/studyyasnitsa" class="btn outline" target="_blank" rel="noopener">Ясница ВКонтакте</a></div>
     </section>`;
 }
