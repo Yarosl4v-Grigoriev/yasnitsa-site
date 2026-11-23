@@ -1,4 +1,4 @@
-import { stories, validateBrief, formatBrief, faq, priceRows } from './domain.js?v=guidelines-20261122';
+import { stories, validateBrief, formatBrief, faq, priceRows } from './domain.js?v=photo-guidelines-20261123';
 const app = document.querySelector('#app');
 const tg = window.Telegram?.WebApp;
 let filter = 'all', selected = 'custom', draft = {}, reviewing = false;
@@ -144,7 +144,7 @@ function brief() {
           <label class="field">Повод<input name="occasion" maxlength="100" minlength="2" required value="${value('occasion')}" placeholder="День рождения, подарок, семейный праздник"></label>
           <label class="field">Желаемая дата<input name="date" type="date" value="${value('date')}"></label>
         </div>
-        <p class="hint">Опишите сюжет, повод и дату. Фото и личные данные в заявку не добавляйте. <a href="../legal/#materials" class="text-button" target="_blank" rel="noopener noreferrer">Правила передачи материалов</a>.</p>
+        <p class="hint">Опишите сюжет, повод и дату. Если важно сходство героя, менеджер объяснит, как передать фото. <a href="../legal/#materials" class="text-button" target="_blank" rel="noopener noreferrer">Правила передачи материалов</a>. <span lang="en"><a href="../legal/#photos-en" class="text-button" target="_blank" rel="noopener noreferrer">Photo guidelines</a></span></p>
         <p class="error" role="alert" id="form-error" hidden></p>
         <button class="btn full" type="submit">Проверить заявку</button>
       </form>
@@ -268,7 +268,7 @@ function prices() {
       </div>
       <p class="muted">С 61-й по 180-ю секунду добавляем 60 ₽ за секунду. С 181-й по 300-ю секунду добавляем 70 ₽ за секунду. Истории дольше 5 минут и дополнительные герои считаем отдельно.</p>
       <h2>Что входит</h2>
-      <p class="muted">Сюжет, образ героя, пробная сцена, озвучка, музыка, до двух точечных правок и готовый MP4. Сейчас работаем по описанию.</p>
+      <p class="muted">Сюжет, образ героя, пробная сцена, озвучка, музыка, до двух точечных правок и готовый MP4. По согласованию можем использовать фото. <span lang="en">Photos are optional and can be shared by arrangement.</span></p>
       <div class="actions"><a href="#brief" class="btn sun">Заполнить заявку</a><a href="https://vk.com/studyyasnitsa" class="btn outline" target="_blank" rel="noopener">Ясница ВКонтакте</a></div>
     </section>`;
 }
